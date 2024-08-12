@@ -38,8 +38,7 @@ The application supports automatic reconnection to the server if the connection 
 3. Using the Generator
    ```bash
    bash gen.sh
-
-   
+   ```
 ## Usage
 
 ### Running the Setup Script
