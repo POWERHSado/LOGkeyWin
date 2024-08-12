@@ -1,5 +1,5 @@
 # LOGkeyWin 
-# 🔑 Keylogger 🔑
+# 🔑 SleekCapture Keystrokes 🔑
 
 ## Overview
 
