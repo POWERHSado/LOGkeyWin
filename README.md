@@ -30,14 +30,13 @@ The application supports automatic reconnection to the server if the connection 
 1. Clone the Repository:
    ```bash
    git clone https://github.com/POWERHSado/LOGkeyWin.git
+   cd LOGkeyWin
    ```
 2. Install Required Python Packages:
    ```bash
    pip install -r requirements.txt
 3. Using the Generator
    ```bash
-   cd LOGkeyWin
-   pip install -r requirements.txt
    bash gen.sh
 
    
