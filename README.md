@@ -70,6 +70,37 @@ The Keylogger with Login Application script will:
 - Capture and send keystrokes to the server.
 - Provide an interface to input and submit login credentials.
 
+## Setup Listener with `nc`
+
+To set up a listener that can receive the keystrokes sent by the keylogger, you can use `nc` (netcat), a versatile networking utility. Follow these steps to configure and run a listener on your server:
+
+### Prerequisites
+
+- Ensure `nc` (netcat) is installed on your server. You can install it using the package manager for your operating system:
+  - **For Debian/Ubuntu:**
+    ```bash
+    sudo apt-get install netcat
+    ```
+  - **For Red Hat/CentOS:**
+    ```bash
+    sudo yum install nc
+    ```
+  - **For macOS:**
+    ```bash
+    brew install netcat
+    ```
+
+### Running the Listener
+
+1. **Open a Terminal:**
+   Access the terminal on your server where you want to listen for incoming connections.
+
+2. **Start the Netcat Listener:**
+   Run the following command to start listening on the port where the keylogger will send data. Replace `<PORT>` with the port number specified in your keylogger configuration.
+   ```bash
+   nc -l -p <PORT>
+
+
 ## Disclaimer
 
 This application is intended for educational purposes only. The creators and developers of this tool are not responsible for any misuse or illegal activities resulting from its use. Ensure you use this software responsibly and in compliance with all applicable local laws and regulations regarding keyloggers and data privacy.
